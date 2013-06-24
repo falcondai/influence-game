@@ -4,7 +4,7 @@ from bson.objectid import ObjectId
 import json
 from bson.json_util import dumps
 
-from login_management import User
+from login import User
 from main import app
 from database import mongo
 

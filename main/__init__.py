@@ -1,8 +1,6 @@
 from flask import Flask
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 app.secret_key = 'placeholder'
 
-import database
-import login_management
-import views
+import database, login, views
