@@ -1,0 +1,53 @@
+{
+	"nodes": [
+		{
+			"id": 0,
+			"name": "some band",
+			"start": 1950,
+			"end": 1970
+		},
+		{
+			"id": 1,
+			"name": "influenced band 0",
+			"start": 1960,
+			"end": 1980
+		},
+		{
+			"id": 2,
+			"name": "influenced band 1",
+			"start": 1980,
+			"end": 1990
+		},
+		{
+			"id": 3,
+			"name": "influenced band 2",
+			"start": 1985,
+			"end": 1995
+		},
+		{
+			"id": 4,
+			"name": "influenced band 3",
+			"start": 1999,
+			"end": 2000
+		},
+		{
+			"id": 5,
+			"name": "influencing band 0",
+			"start": 1940,
+			"end": 1965
+		},
+		{
+			"id": 6,
+			"name": "influencing band 1",
+			"start": 1930,
+			"end": 1945
+		}
+	],
+	"links": [
+		{
+			"influence": 0,
+			"source": 0,
+			"target": 1
+		}
+	]
+}
