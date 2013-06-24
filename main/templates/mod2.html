@@ -12,7 +12,7 @@
 		}
 
 		.node {
-			stroke: #fff;
+			stroke: green;
 			stroke-width: 1.5px;
 		}
 		
@@ -190,10 +190,12 @@
 	// initialize the force layout
 	// treat the center node specially
 	node = node.data([nodes[0]], function(d) { return d.id; });
-	node.enter().append("circle").attr('id', 'node-0').attr("class", 'node linked')
-		.attr("r", node_r)
-		.attr("cx", function(d) { return d.x; })
-		.attr("cy", function(d) { return d.y; });
+	node.enter().append("text").attr('id', 'node-0').attr("class", 'node linked')
+		.text(function(d) { return d.name; })
+		.attr('text-anchor', 'middle')
+		// .attr("r", node_r)
+		.attr("x", function(d) { return d.x; })
+		.attr("y", function(d) { return d.y; });
 
 	// put up the links
 	for (var i in graph.links) {
@@ -223,6 +225,14 @@
 	document.body.addEventListener('touchmove', function(e){ e.preventDefault(); });
 	document.body.addEventListener('touchstart', function(e){ e.preventDefault(); }); 
 	
+	function append_node_to(selector) {
+		return selector.append("text").attr("class", 'node linked')
+			.text(function(d) { return d.name; })
+			.attr('text-anchor', 'middle')
+			.attr("x", function(d) { return d.x; })
+			.attr("y", function(d) { return d.y; });
+	}
+
 	function move_to_center(d) {
 		var k = d3.select(this);
 		//d3.select(this).classed('clicked', !k.classed('clicked'));
@@ -235,10 +245,11 @@
 		link.exit().remove();
 
 		node = node.data(force.nodes(), function(d) { return d.id; });
-		node.enter().append("circle").attr("class", 'node linked')
-			.attr("r", node_r)
-			.attr("cx", function(d) { return d.x; })
-			.attr("cy", function(d) { return d.y; })
+		// node.enter().append("circle").attr("class", 'node linked')
+		// 	.attr("r", node_r)
+		// 	.attr("cx", function(d) { return d.x; })
+		// 	.attr("cy", function(d) { return d.y; })
+		append_node_to(node.enter())
 			.on('dblclick', move_to_center)
 			.call(force.drag);
 		node.exit().remove();
@@ -265,8 +276,8 @@
 		  }
 		});
 		
-		node.attr("cx", function(d) { return d.x; })
-				.attr("cy", function(d) { return d.y; })
+		node.attr("x", function(d) { return d.x; })
+				.attr("y", function(d) { return d.y; })
 
 		link.attr("x1", function(d) { return d.source.x; })
 				.attr("y1", function(d) { return d.source.y; })
