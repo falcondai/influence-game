@@ -4,35 +4,52 @@ from bson.objectid import ObjectId
 import json
 from bson.json_util import dumps
 
-from login import User
+from login import login_manager, User
 from main import app
 from database import mongo
 
+# login manager config
+login_manager.login_view = 'login'
+
+def handle_redirect(url):
+	return redirect(request.args.get('next') or url)
+
+def login_form_validate(form):
+	return form.get('username') and form.get('password')
+
 @app.route('/')
 def index():
-	user = None
-	if current_user.is_authenticated():
-		user = current_user
 	graphs = mongo.db.graphs.find({}, {'_id': 1})
-	return render_template('index.html', user=user, graph_ids=map(lambda x: str(x['_id']), graphs))
+	return render_template('index.html', graph_ids=map(lambda x: str(x['_id']), graphs))
+
+# user login flow
+@app.route('/signup')
+def signup():
+	pass
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-	if request.method == 'POST' and 'username' in request.form:
-		user_dict = mongo.db.users.find_one({'name': request.form.get('username')})
-		if user_dict and login_user(User(user_dict)):
-			flash("Logged in successfully.")
-			return redirect(request.args.get("next") or url_for("index"))
-		else:
-			flash("Logged in unsuccessfully.")
+	if request.method == 'POST':
+		if login_form_validate(request.form):
+			user = User.authenticate_user(request.form.get('username'), 
+				request.form.get('password'))
+			print user.get_id()
+			if user and login_user(user, 
+				remember=request.form.get('remember')=='on'):
+				flash("Logged in successfully.")
+				return handle_redirect(url_for("index"))	
+		flash("Logged in unsuccessfully.")
+
 	return render_template("login.html")
-		
+
 @app.route('/logout')
 @login_required
 def logout():
 	logout_user()
-	return redirect(url_for('index'))
+	flash('Logged out successfully.')
+	return handle_redirect(url_for('index'))
 
+# graph views
 @app.route('/view/<graph_id>/<center_node_id>')
 @app.route('/view/<graph_id>/')
 def view(graph_id, center_node_id=''):
@@ -83,17 +100,7 @@ def _get_center_node(graph_id):
 		oid = g['links'][0]['source']
 		return str(oid)
 	return None
-
-# modify a graph's links
-def _add_link(graph_id, source_id, target_id, attr):
-	return mongo.db.graphs.update({'_id': ObjectId(graph_id)}, 
-		{'$push': {'links': {'source': ObjectId(source_id), 'target': ObjectId(target_id), 'attr': attr}}}, w=1)
-	#mongo.db.get_last_error()
-
-def _remove_link(graph_id, source_id, target_id):
-	return mongo.db.graphs.update({'_id': ObjectId(graph_id)}, 
-		{'$pull': {'links': {'source': ObjectId(source_id), 'target': ObjectId(target_id)}}}, w=1)
-
+	
 # AJAX calls
 # TODO add status message and wrapper to payload
 #@app.route('/save/<graph_id>/ , methods=['PUT'])
@@ -114,16 +121,3 @@ def get_node_json(node_id):
 def get_all_nodes_json():
 	return Response(dumps([n for n in mongo.db.nodes.find()]), mimetype='application/json')
 
-@app.route('/api/link/add.json', methods=['POST'])
-@login_required
-def add_link():
-	if request.mimetype != 'application/json':
-		request.json = json.loads(request.data)
-	return Response(dumps(_add_link(request.json['graph_id'], request.json['source_id'], request.json['target_id'], request.json['attr'])), mimetype='application/json')
-	 
-@app.route('/api/link/remove.json', methods=['POST'])
-@login_required
-def remove_link():
-	if request.mimetype != 'application/json':
-		request.json = json.loads(request.data)
-	return Response(dumps(_remove_link(request.json['graph_id'], request.json['source_id'], request.json['target_id'])), mimetype='application/json')

@@ -190,13 +190,8 @@
 	// initialize the force layout
 	// treat the center node specially
 	node = node.data([nodes[0]], function(d) { return d.id; });
-	node.enter().append("text").attr('id', 'node-0').attr("class", 'node linked')
-		.text(function(d) { return d.name; })
-		.attr('text-anchor', 'middle')
-		// .attr("r", node_r)
-		.attr("x", function(d) { return d.x; })
-		.attr("y", function(d) { return d.y; });
-
+	append_node_to(node.enter()).attr('id', 'node-0');
+	
 	// put up the links
 	for (var i in graph.links) {
 		var l = graph.links[i], n = null;

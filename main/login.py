@@ -14,6 +14,28 @@ class User(UserMixin):
 		self.graph_id = unicode(user_dict['graph_oid'])
 		self.obj = user_dict
 
+	@staticmethod
+	def find_user_by_id(user_id):
+		user_record = mongo.db.users.find_one({u'_id': ObjectId(user_id)})
+		if user_record:
+			return User(user_record)
+		return None
+
+	@staticmethod
+	def find_user_by_name(username):
+		user_record = mongo.db.users.find_one({u'name': username})
+		if user_record:
+			return User(user_record)
+		return None
+
+	@staticmethod
+	def authenticate_user(username, password):
+		user = User.find_user_by_name(username)
+		if user and password == '123':
+			return user
+		return None
+
 @login_manager.user_loader
 def load_user(user_id):
-	return User(mongo.db.users.find_one({u'_id': ObjectId(user_id)}))
+	u = User.find_user_by_id(user_id)
+	return u

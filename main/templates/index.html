@@ -1,19 +1,15 @@
-<!doctype html>
-<html>
-<body>
+{% extends "base.html" %}
+{% block body %}
 	<div>
-		{% if user %}
-		Hi, {{ user.name }}! <a href="/logout">logout</a>
-		{% else %}
-		Hi there, visitor! <a href="/login">login</a>
-		{% endif %}
-	</div>
-	
-	{% if user %}
-	<div>
-		Edit your graph: <a href="{{ url_for('edit', graph_id=user.graph_id) }}">{{ url_for('edit', graph_id=user.graph_id) }}</a>
-	</div>
+	{% if current_user.is_authenticated() %}
+		Hi, {{ current_user.name }}! <a href="{{ url_for('logout') }}">logout</a>
+		<div>
+			Edit your graph: <a href="{{ url_for('edit', graph_id=current_user.graph_id) }}">{{ url_for('edit', graph_id=current_user.graph_id) }}</a>
+		</div>
+	{% else %}
+		Hi there, visitor! <a href="{{ url_for('login') }}">login</a>
 	{% endif %}
+	</div>
 
 	<div>
 		A few graphs that you can view:
@@ -23,5 +19,4 @@
 			</div>
 		{% endfor %}
 	</div>
-</body>
-</html>
+{% endblock %}
