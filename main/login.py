@@ -13,18 +13,20 @@ class User(UserMixin):
 			user_dict = kwargs
 		self.id = unicode(user_dict[u'_id'])
 		self.name = user_dict['name']
-		self.graph_id = unicode(user_dict['graph_oid'])
+		self.password = user_dict['password']
+		self.graph_id = unicode(user_dict['graph_id'])
 		self.obj = user_dict
 
 	@staticmethod
 	def create_user(name, password):
-		u = {
-		'name': name, 
-		'password': password, 
-		'active': True,
-		}
 		try:
-			return mongo.db.users.insert(u, w=1)
+			gid = mongo.db.graphs.insert({}, w=1)
+			return mongo.db.users.insert({
+				'name': name, 
+				'password': password, 
+				'active': True,
+				'graph_id': gid
+				}, w=1)
 		except:	
 			return None
 
@@ -45,7 +47,7 @@ class User(UserMixin):
 	@staticmethod
 	def authenticate_user(username, password):
 		user = User.find_user_by_name(username)
-		if user and password == '123':
+		if user and password == user.password:
 			return user
 		return None
 

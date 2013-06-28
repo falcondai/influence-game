@@ -12,11 +12,13 @@
 	</div>
 
 	<div>
-		A few graphs that you can view:
+		View others' graphs:
+		<ul>
 		{% for id in graph_ids %}
-			<div>
+			<li>
 				<a href="{{ url_for('view', graph_id=id) }}">{{ url_for('view', graph_id=id) }}</a>
-			</div>
+			</li>
 		{% endfor %}
+		</ul>
 	</div>
 {% endblock %}

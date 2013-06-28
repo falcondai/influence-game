@@ -51,6 +51,10 @@
 			stroke-dasharray: 30, 10;
 			fill: none;
 		}
+
+		.locus {
+			display: none;
+		}
 	</style>
 </head>
 <body>
@@ -157,7 +161,7 @@
 		.on('drag.mod',	function(d) {
 			var mx = d3.event.x,
 				my = d3.event.y;
-			d3.select(this).attr('cx', mx).attr('cy', my);
+			d3.select(this).attr('x', mx).attr('y', my);
 			d.x = mx;
 			d.y = my;
 			update_bins(mx, my);
@@ -193,8 +197,8 @@
 	append_node_to(node.enter()).attr('id', 'node-0');
 
 	// put up the links
-	for (var i in graph.links) {
-		var l = graph.links[i], n = null;
+	for (var i in graph) {
+		var l = graph[i], n = null;
 		if (l.source.$oid == center_node_id) {
 			n = nodes_dict[l.target.$oid];
 			n.type = 'c';
@@ -240,10 +244,6 @@
 		link.exit().remove();
 
 		node = node.data(force.nodes(), function(d) { return d.id; });
-		// node.enter().append("circle").attr("class", 'node linked')
-		// 	.attr("r", node_r)
-		// 	.attr("cx", function(d) { return d.x; })
-		// 	.attr("cy", function(d) { return d.y; })
 		append_node_to(node.enter())
 			.on('dblclick', move_to_center)
 			.call(force.drag);
@@ -254,9 +254,12 @@
 
 	function update_tray() {
 		free_node = free_node.data(all_nodes.filter(function(n, i, a) { return nodes.indexOf(n) < 0; }), function(d) { return d.id; });
-		free_node.enter().append('circle').attr("class", 'node unlinked')
-			.attr('cx', function(d) { if (d.x==null) d.x = random_range(0, width); return d.x; }).attr('cy', function(d) { if (d.y==null) d.y = random_range(height*layout[1], height*layout[2]); return d.y; }).attr("r", 12)
-			.on('dblclick', move_to_center).call(free_drag)
+		// free_node.enter().append('circle').attr("class", 'node unlinked')
+		// 	.attr('cx', function(d) { if (d.x==null) d.x = random_range(0, width); return d.x; }).attr('cy', function(d) { if (d.y==null) d.y = random_range(height*layout[1], height*layout[2]); return d.y; }).attr("r", 12)
+		append_node_to(free_node.enter())
+			.attr('class', 'node unlinked')
+			.attr('x', function(d) { if (d.x==null) d.x = random_range(0, width); return d.x; }).attr('y', function(d) { if (d.y==null) d.y = random_range(height*layout[1], height*layout[2]); return d.y; })
+			.on('dblclick', move_to_center)
 			.call(free_drag);
 		free_node.exit().remove();
 	}
@@ -303,12 +306,30 @@
 				target_id: (type[0] == 'c' ? n.id : nodes[0].id),
 				attr: {'strength': type[1]}
 			};
-			post_json('{{ url_for('add_link') }}', new_link)
+			post_json('{{ url_for('add_edge') }}', new_link)
 			// log
 			if (type[0] == 'p') 
 				console.log('added', n.name+'->'+nodes[0].name, type);
 			else
 				console.log('added', nodes[0].name+'->'+n.name, type);
+		}
+	}
+
+	function update_edge(nodes, links, n, type) {
+		if (nodes.indexOf(n) < 0) {
+			n.type = type;
+			var new_link = {
+				graph_id: graph_id,
+				source_id: (type[0] == 'c' ? nodes[0].id : n.id),
+				target_id: (type[0] == 'c' ? n.id : nodes[0].id),
+				attr: {'strength': type[1]}
+			};
+			post_json('{{ url_for('update_edge') }}', new_link)
+			// log
+			if (type[0] == 'p') 
+				console.log('updated', n.name+'->'+nodes[0].name, type);
+			else
+				console.log('updated', nodes[0].name+'->'+n.name, type);
 		}
 	}
 
@@ -328,7 +349,7 @@
 						source_id: (type[0] == 'c' ? nodes[0].id : n.id),
 						target_id: (type[0] == 'c' ? n.id : nodes[0].id),
 					};
-					post_json('{{ url_for('remove_link') }}', old_link);
+					post_json('{{ url_for('remove_edge') }}', old_link);
 
 					break;
 				}
@@ -338,8 +359,7 @@
 		if (type[0] == 'p') 
 			console.log('removed', n.name+'->'+nodes[0].name, type);
 		else
-			console.log('removed', nodes[0].name+'->'+n.name, type);
-		
+			console.log('removed', nodes[0].name+'->'+n.name, type);		
 	}
 
 	function random_range(start, end) {
