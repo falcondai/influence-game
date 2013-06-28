@@ -104,7 +104,7 @@
 	var force = d3.layout.force()
 			.nodes(nodes)
 			.links(links)
-			.charge(-300)
+			.charge(-1000)
 			.linkStrength(0)
 			.size([width, height*layout[1]])
 			.on("tick", tick);
@@ -191,7 +191,7 @@
 	// treat the center node specially
 	node = node.data([nodes[0]], function(d) { return d.id; });
 	append_node_to(node.enter()).attr('id', 'node-0');
-	
+
 	// put up the links
 	for (var i in graph.links) {
 		var l = graph.links[i], n = null;

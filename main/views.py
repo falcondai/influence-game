@@ -17,15 +17,27 @@ def handle_redirect(url):
 def login_form_validate(form):
 	return form.get('username') and form.get('password')
 
+def signup_form_validate(form):
+	return form.get('username') and form.get('password')
+
 @app.route('/')
 def index():
 	graphs = mongo.db.graphs.find({}, {'_id': 1})
 	return render_template('index.html', graph_ids=map(lambda x: str(x['_id']), graphs))
 
 # user login flow
-@app.route('/signup')
+@app.route('/signup', methods=['GET', 'POST'])
 def signup():
-	pass
+	if request.method == 'POST':
+		if signup_form_validate(request.form):
+			uid = User.create_user(request.form.get('username'), 
+				request.form.get('password'))
+			if uid:
+				flash('signed up successfully. you may log in.' % uid)
+				return handle_redirect(url_for('login'))
+		flash('please check the entered information.')
+
+	return render_template('signup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -33,7 +45,6 @@ def login():
 		if login_form_validate(request.form):
 			user = User.authenticate_user(request.form.get('username'), 
 				request.form.get('password'))
-			print user.get_id()
 			if user and login_user(user, 
 				remember=request.form.get('remember')=='on'):
 				flash("Logged in successfully.")
@@ -59,7 +70,7 @@ def view(graph_id, center_node_id=''):
 	if center_node_id == '':
 		center_node_id = _get_center_node(graph_id)
 	# FIXME use a view-only page
-	return render_template('mod.html', graph_id=graph_id, center_node_id=center_node_id, graph=graph, all_nodes=dumps([n for n in mongo.db.nodes.find()]))
+	return render_template('view.html', graph_id=graph_id, center_node_id=center_node_id, graph=graph, all_nodes=dumps([n for n in mongo.db.nodes.find()]))
 	
 @app.route('/edit/<graph_id>/<center_node_id>')
 @app.route('/edit/<graph_id>/')
@@ -73,7 +84,7 @@ def edit(graph_id, center_node_id=''):
 	if current_user.graph_id != graph_id:
 		flash('You are not the owner of graph %s.' % graph_id)
 		return redirect(url_for('view', graph_id=graph_id, center_node_id=center_node_id))
-	return render_template('mod2.html', graph_id=graph_id, center_node_id=center_node_id, graph=graph, all_nodes=dumps([n for n in mongo.db.nodes.find()]))
+	return render_template('modify.html', graph_id=graph_id, center_node_id=center_node_id, graph=graph, all_nodes=dumps([n for n in mongo.db.nodes.find()]))
 
 # helper functions
 def _get_graph(graph_id):
@@ -100,7 +111,7 @@ def _get_center_node(graph_id):
 		oid = g['links'][0]['source']
 		return str(oid)
 	return None
-	
+
 # AJAX calls
 # TODO add status message and wrapper to payload
 #@app.route('/save/<graph_id>/ , methods=['PUT'])

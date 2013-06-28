@@ -7,7 +7,7 @@
 			Edit your graph: <a href="{{ url_for('edit', graph_id=current_user.graph_id) }}">{{ url_for('edit', graph_id=current_user.graph_id) }}</a>
 		</div>
 	{% else %}
-		Hi there, visitor! <a href="{{ url_for('login') }}">login</a>
+		Hi there, visitor! <a href="{{ url_for('login') }}">login</a> or <a href="{{ url_for('signup') }}">signup</a>
 	{% endif %}
 	</div>
 

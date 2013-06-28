@@ -8,11 +8,25 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 class User(UserMixin):
-	def __init__(self, user_dict):
+	def __init__(self, user_dict=None, **kwargs):
+		if not user_dict:
+			user_dict = kwargs
 		self.id = unicode(user_dict[u'_id'])
 		self.name = user_dict['name']
 		self.graph_id = unicode(user_dict['graph_oid'])
 		self.obj = user_dict
+
+	@staticmethod
+	def create_user(name, password):
+		u = {
+		'name': name, 
+		'password': password, 
+		'active': True,
+		}
+		try:
+			return mongo.db.users.insert(u, w=1)
+		except:	
+			return None
 
 	@staticmethod
 	def find_user_by_id(user_id):
@@ -37,5 +51,4 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-	u = User.find_user_by_id(user_id)
-	return u
+	return User.find_user_by_id(user_id)
