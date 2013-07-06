@@ -20,13 +20,13 @@ class User(UserMixin):
 	@staticmethod
 	def create_user(name, password):
 		try:
-			gid = mongo.db.graphs.insert({}, w=1)
+			gid = mongo.db.graphs.insert({}, j=True)
 			return mongo.db.users.insert({
 				'name': name, 
 				'password': password, 
 				'active': True,
 				'graph_id': gid
-				}, w=1)
+				}, j=True)
 		except:	
 			return None
 

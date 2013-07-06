@@ -15,14 +15,14 @@ def _add_edge(graph_id, source_id, target_id, attr):
 		'source': ObjectId(source_id),
 		'target': ObjectId(target_id),
 		'attr': attr
-		}, w=1)
+		}, j=True)
 
 def _remove_edge(graph_id, source_id, target_id):
 	return mongo.db.edges.remove({
 		'graph_id': ObjectId(graph_id),
 		'source': ObjectId(source_id),
 		'target': ObjectId(target_id)
-		}, w=1)
+		}, j=True)
 
 def _update_edge(graph_id, source_id, target_id, attr):
 	# TODO error handling
@@ -35,6 +35,7 @@ def normalize_json(requst):
 		request.mimetype = 'application/json'
 
 # api endpoints
+# FIXME lack owner authentication 
 @app.route('/api/edge/add.json', methods=['POST'])
 @login_required
 def add_edge():

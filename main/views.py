@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, request, flash, abort, Response
+from flask import render_template, redirect, session, url_for, request, flash, abort, Response
 from flask.ext.login import current_user, login_required, login_user, logout_user
 from bson.objectid import ObjectId
 import json

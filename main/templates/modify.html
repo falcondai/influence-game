@@ -119,6 +119,20 @@
 
 	svg.append('rect').attr('class', 'tray').attr('width', width).attr('height', height*(layout[2]-layout[1])).attr('y', height*layout[1]);
 	
+	// define marker
+	svg.append("defs").selectAll("marker")
+	    .data(["arrow"])
+	  .enter().append("svg:marker")
+	    .attr("id", String)
+	    .attr("viewBox", "0 0 20 10")
+	    .attr("refX", 100)
+	    .attr("refY", 5)
+	    .attr("markerWidth", 10)
+	    .attr("markerHeight", 5)
+	    .attr("orient", "auto")
+	    .append("path")
+	    .attr("d", "M 0 0 L 20 5 L 0 10 z");
+
 	// draw large bins
 	svg.selectAll('.lbin').data(d3.map(lbins).entries()).enter()
 		.append('rect').attr('class', 'lbin').attr('id', function(d) { return 'lbin-'+d.key; })
@@ -198,20 +212,24 @@
 
 	// put up the links
 	for (var i in graph) {
-		var l = graph[i], n = null;
+		var l = graph[i], n = null, new_link = {source: null, target: null};
 		if (l.source.$oid == center_node_id) {
 			n = nodes_dict[l.target.$oid];
 			n.type = 'c';
+			new_link.source = nodes[0];
+			new_link.target = n;
 		} else if (l.target.$oid == center_node_id) {
 			n = nodes_dict[l.source.$oid];
 			n.type = 'p';
+			new_link.source = n;
+			new_link.target = nodes[0];
 		}
 		if (n != null && nodes.indexOf(n) < 0) {
 			n.type += l.attr.strength;
 			n.x = 0.;
 			n.y = 0.;
 			nodes.push(n);
-			links.push({source: nodes[0], target: n});
+			links.push(new_link);
 		}
 	}
 
@@ -240,7 +258,7 @@
 	
 	function start() {
 		link = link.data(force.links(), function(d) { return d.source.id + "-" + d.target.id; });
-		link.enter().insert("line", ".node").attr("class", "link");
+		link.enter().insert("line", ".node").attr("class", "link").attr('marker-end', 'url(#arrow)');
 		link.exit().remove();
 
 		node = node.data(force.nodes(), function(d) { return d.id; });
@@ -299,7 +317,11 @@
 		if (nodes.indexOf(n) < 0) {
 			n.type = type;
 			nodes.push(n);
-			links.push({source: nodes[0], target: n});
+			if (type[0] == 'c')
+				links.push({source: nodes[0], target: n});
+			else
+				links.push({source: n, target: nodes[0]});
+	
 			var new_link = {
 				graph_id: graph_id,
 				source_id: (type[0] == 'c' ? nodes[0].id : n.id),
