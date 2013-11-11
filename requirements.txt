@@ -7,5 +7,6 @@ Werkzeug==0.9.1
 argparse==1.2.1
 distribute==0.6.24
 itsdangerous==0.21
+pycrypto==2.6.1
 pymongo==2.5.2
 wsgiref==0.1.2
