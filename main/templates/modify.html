@@ -1,427 +1,462 @@
 <!DOCTYPE html>
 <head>
-	<meta charset="utf-8">
-	<style>
-		body {
-			margin: 0;
-		}
-		
-		.link {
-			stroke: #000;
-			stroke-width: 1.5px;
-		}
+  <meta charset="utf-8">
+  <style>
+    body {
+      margin: 0;
+    }
+    
+    .link {
+      stroke: #aaa;
+      stroke-width: 1.5px;
+    }
 
-		.node {
-			stroke: green;
-			stroke-width: 1.5px;
-		}
-		
-		#node-0 {
-			fill: #f44;
-		}
+    .link.w {
+      stroke-width: 1.5px;
+    }
 
-		.tray {
-			fill: #aaa;
-			stroke: none;
-		}
+    .link.m {
+      stroke-width: 2px;
+    }
 
-		.node.linked {
-			fill: #000;
-		}
+    .link.s {
+      stroke-width: 2.5px;
+    }
+    
+    #arrow {
+        fill: #888;
+    }
 
-		.node.unlinked {
-			fill: #555;
-		}
-	
-		.node.clicked {
-			stroke: #57c;
-			stroke-width: 3px;
-		}
-		
-		.bin {
-			stroke: rgb(0, 175, 0);
-			stroke-width: 5;
-			stroke-dasharray: 30, 10;
-			fill: none;
-		}
-		
-		.lbin {
-			stroke: rgb(0, 175, 0);
-			stroke-width: 5;
-			stroke-dasharray: 30, 10;
-			fill: none;
-		}
+    .node {
+      stroke: green;
+      stroke-width: 1px;
+      cursor: pointer;
+    }
+    
+    #node-0 {
+      fill: #f44;
+      stroke: #800;
+      font-size: 1.1em;
+    }
 
-		.locus {
-			display: none;
-		}
-	</style>
+    .tray {
+      fill: #aaa;
+      stroke: none;
+    }
+
+    .node.linked {
+      fill: #000;
+    }
+
+    .node.unlinked {
+      fill: #555;
+    }
+  
+    .node.clicked {
+      stroke: #57c;
+      stroke-width: 3px;
+    }
+    
+    .bin {
+      stroke: rgb(0, 175, 0);
+      stroke-width: 5;
+      stroke-dasharray: 30, 10;
+      fill: none;
+    }
+    
+    .lbin {
+      stroke: rgb(0, 175, 0);
+      stroke-width: 5;
+      stroke-dasharray: 30, 10;
+      fill: none;
+    }
+
+    .locus {
+      display: none;
+    }
+  </style>
 </head>
 <body>
 <script src="{{ url_for('static', filename='js/d3.v2.mod.js') }}" type="text/javascript"></script>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
 <script>
 
-	var graph_id = '{{ graph_id }}', 
-		center_node_id = '{{ center_node_id }}', 
-		graph = {{ graph|safe }},
-		all_nodes = {{ all_nodes|safe }},
-		width = 900, height = 900,
-		node_r = 15;
-	
-	if (center_node_id == 'None')
-		center_node_id = all_nodes[0]._id.$oid;
+  var graph_id = '{{ graph_id }}', 
+    center_node_id = '{{ center_node_id }}', 
+    graph = {{ graph|safe }},
+    all_nodes = {{ all_nodes|safe }},
+    width = 900, height = 900,
+    node_r = 15;
+  
+  if (center_node_id == 'None')
+    center_node_id = all_nodes[0]._id.$oid;
 
-	var layout = [1/3, 2/3, 1],
-			loci = {ps: {x:1/6, y:1/6}, pm: {x:3/6, y:1/6}, pw: {x:5/6, y:1/6}, cs: {x:1/6, y:3/6}, cm: {x:3/6, y:3/6}, cw: {x:5/6, y:3/6}},
-			bins = {},
-			bin_m = 12, bin_r = 10,
-			lbins = {p: {x: 0, y: 0, width: 1, height: layout[0]}, c: {x: 0, y: layout[0], width: 1, height: layout[1]-layout[0]}},
-			lbin_m = 5;;
-			
-	for (var t in loci) {
-		var x = loci[t].x, y = loci[t].y;
-		bins[t] = {x: x-1/6, y: y-1/6, width: 1/3, height: 1/3};
-	}
+  var layout = [1/3, 2/3, 1],
+      loci = {ps: {x:1/6, y:1/6}, pm: {x:3/6, y:1/6}, pw: {x:5/6, y:1/6}, cs: {x:1/6, y:3/6}, cm: {x:3/6, y:3/6}, cw: {x:5/6, y:3/6}},
+      bins = {},
+      bin_m = 12, bin_r = 10,
+      lbins = {p: {x: 0, y: 0, width: 1, height: layout[0]}, c: {x: 0, y: layout[0], width: 1, height: layout[1]-layout[0]}},
+      lbin_m = 5;;
+      
+  for (var t in loci) {
+    var x = loci[t].x, y = loci[t].y;
+    bins[t] = {x: x-1/6, y: y-1/6, width: 1/3, height: 1/3};
+  }
 
-	// load data
-	var nodes_dict = {};
-	for (var i in all_nodes) {
-		all_nodes[i].id = all_nodes[i]._id.$oid;
-		nodes_dict[all_nodes[i].id] = all_nodes[i];
-	}
+  // load data
+  var nodes_dict = {};
+  for (var i in all_nodes) {
+    all_nodes[i].id = all_nodes[i]._id.$oid;
+    nodes_dict[all_nodes[i].id] = all_nodes[i];
+  }
 
-	for (var n in all_nodes) {
-		if (center_node_id == all_nodes[n]._id.$oid) {
-			var center_node = all_nodes.splice(n, 1)[0];
-			center_node.fixed = true;
-			center_node.x = width/2;
-			center_node.y = height*layout[0];
-			all_nodes.unshift(center_node);
-			break;
-		}
-	}
-		
-	var nodes = [all_nodes[0]],
-			links = [];
+  for (var n in all_nodes) {
+    if (center_node_id == all_nodes[n]._id.$oid) {
+      var center_node = all_nodes.splice(n, 1)[0];
+      center_node.fixed = true;
+      center_node.x = width/2;
+      center_node.y = height*layout[0];
+      all_nodes.unshift(center_node);
+      break;
+    }
+  }
+    
+  var nodes = [all_nodes[0]],
+      links = [];
 
-	var force = d3.layout.force()
-			.nodes(nodes)
-			.links(links)
-			.charge(-1000)
-			.linkStrength(0)
-			.size([width, height*layout[1]])
-			.on("tick", tick);
+  var force = d3.layout.force()
+      .nodes(nodes)
+      .links(links)
+      .charge(-1500)
+      .linkStrength(0)
+      .size([width, height*layout[1]])
+      .on("tick", tick);
 
-	var svg = d3.select("body").append("svg")
-			.attr("width", width)
-			.attr("height", height);
+  var svg = d3.select("body").append("svg")
+      .attr("width", width)
+      .attr("height", height);
 
-	svg.append('rect').attr('class', 'tray').attr('width', width).attr('height', height*(layout[2]-layout[1])).attr('y', height*layout[1]);
-	
-	// define marker
-	svg.append("defs").selectAll("marker")
-	    .data(["arrow"])
-	  .enter().append("svg:marker")
-	    .attr("id", String)
-	    .attr("viewBox", "0 0 20 10")
-	    .attr("refX", 100)
-	    .attr("refY", 5)
-	    .attr("markerWidth", 10)
-	    .attr("markerHeight", 5)
-	    .attr("orient", "auto")
-	    .append("path")
-	    .attr("d", "M 0 0 L 20 5 L 0 10 z");
+  svg.append('rect').attr('class', 'tray').attr('width', width).attr('height', height*(layout[2]-layout[1])).attr('y', height*layout[1]);
+  
+  // define marker
+  svg.append("defs").selectAll("marker")
+      .data(["arrow"])
+    .enter().append("svg:marker")
+      .attr("id", String)
+      .attr("viewBox", "0 0 20 10")
+      .attr("refX", 64)
+      .attr("refY", 5)
+      .attr("markerWidth", 10)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M 0 0 L 20 5 L 0 10 z");
 
-	// draw large bins
-	svg.selectAll('.lbin').data(d3.map(lbins).entries()).enter()
-		.append('rect').attr('class', 'lbin').attr('id', function(d) { return 'lbin-'+d.key; })
-		.attr('x', function(d) { return d.value.x*width+lbin_m; })
-		.attr('y', function(d) { return d.value.y*height+lbin_m; })
-		.attr('width', function(d) { return d.value.width*width-2*lbin_m; })
-		.attr('height', function(d) { return d.value.height*height-2*lbin_m; })
-		.attr('rx', bin_r)
-		.attr('ry', bin_r)
-		.attr('opacity', 0);
-		
-	// draw bins
-	svg.selectAll('.bin').data(d3.map(bins).entries()).enter()
-		.append('rect').attr('class', function(d) { return 'bin '+d.key[0]+'bin'; }).attr('id', function(d) { return 'bin-'+d.key; })
-		.attr('x', function(d) { return d.value.x*width+bin_m; })
-		.attr('y', function(d) { return d.value.y*height+bin_m; })
-		.attr('width', function(d) { return d.value.width*width-2*bin_m; })
-		.attr('height', function(d) { return d.value.height*height-2*bin_m; })
-		.attr('rx', bin_r)
-		.attr('ry', bin_r)
-		.attr('opacity', 0);
+  // draw large bins
+  svg.selectAll('.lbin').data(d3.map(lbins).entries()).enter()
+    .append('rect').attr('class', 'lbin').attr('id', function(d) { return 'lbin-'+d.key; })
+    .attr('x', function(d) { return d.value.x*width+lbin_m; })
+    .attr('y', function(d) { return d.value.y*height+lbin_m; })
+    .attr('width', function(d) { return d.value.width*width-2*lbin_m; })
+    .attr('height', function(d) { return d.value.height*height-2*lbin_m; })
+    .attr('rx', bin_r)
+    .attr('ry', bin_r)
+    .attr('opacity', 0);
+    
+  // draw bins
+  svg.selectAll('.bin').data(d3.map(bins).entries()).enter()
+    .append('rect').attr('class', function(d) { return 'bin '+d.key[0]+'bin'; }).attr('id', function(d) { return 'bin-'+d.key; })
+    .attr('x', function(d) { return d.value.x*width+bin_m; })
+    .attr('y', function(d) { return d.value.y*height+bin_m; })
+    .attr('width', function(d) { return d.value.width*width-2*bin_m; })
+    .attr('height', function(d) { return d.value.height*height-2*bin_m; })
+    .attr('rx', bin_r)
+    .attr('ry', bin_r)
+    .attr('opacity', 0);
 
-	// draw loci to help debug
-	svg.selectAll('.locus').data(d3.map(loci).entries()).enter()
-		.append('circle').attr('class', 'locus')
-		.attr('cy', function(d) { return d.value.y*height; })
-		.attr('cx', function(d) { return d.value.x*width; })
-		.attr('r', 5).attr('fill', 'blue');
+  // draw loci to help debug
+  svg.selectAll('.locus').data(d3.map(loci).entries()).enter()
+    .append('circle').attr('class', 'locus')
+    .attr('cy', function(d) { return d.value.y*height; })
+    .attr('cx', function(d) { return d.value.x*width; })
+    .attr('r', 5).attr('fill', 'blue');
 
-	var node = svg.selectAll(".node"),
-			link = svg.selectAll(".link");
+  var node = svg.selectAll(".node"),
+      link = svg.selectAll(".link");
 
-	var free_node = svg.selectAll('.node.unlinked');
+  var free_node = svg.selectAll('.node.unlinked');
 
-	var free_drag = d3.behavior.drag().origin(Object)
-		.on('dragstart.mod', function(d) {
-			// show lbins
-			svg.selectAll('.lbin').attr('opacity', 0.3);
-		})
-		.on('drag.mod',	function(d) {
-			var mx = d3.event.x,
-				my = d3.event.y;
-			d3.select(this).attr('x', mx).attr('y', my);
-			d.x = mx;
-			d.y = my;
-			update_bins(mx, my);
-		})
-		.on('dragend.mod', function(d) {
-			var m = d3.mouse(svg[0][0]),
-				mx = m[0],
-				my = m[1];
-			if (my < height*layout[1]) {
-				d.px = mx;
-				d.py = my;
-				add_node(nodes, links, d, nearest_locus(mx, my));
-				update_tray();
-				start();
-			}
-			// hide lbins
-			svg.selectAll('.lbin').attr('opacity', 0);
-			// hide bins
-			svg.selectAll('.bin').attr('opacity', 0);
-		});
+  var free_drag = d3.behavior.drag().origin(Object)
+    .on('dragstart.mod', function(d) {
+      // show lbins
+      svg.selectAll('.lbin').attr('opacity', 0.3);
+    })
+    .on('drag.mod',  function(d) {
+      var mx = d3.event.x,
+        my = d3.event.y;
+      d3.select(this).attr('x', mx).attr('y', my);
+      d.x = mx;
+      d.y = my;
+      update_bins(mx, my);
+    })
+    .on('dragend.mod', function(d) {
+      var m = d3.mouse(svg[0][0]),
+        mx = m[0],
+        my = m[1];
+      if (my < height*layout[1]) {
+        d.px = mx;
+        d.py = my;
+        add_node(nodes, links, d, nearest_locus(mx, my));
+        update_tray();
+        start();
+      }
+      // hide lbins
+      svg.selectAll('.lbin').attr('opacity', 0);
+      // hide bins
+      svg.selectAll('.bin').attr('opacity', 0);
+    });
 
-	/*
-	var linked_drag = d3.behavior.drag().origin(Object)
-		.on('dragend.mod', function(d) {
-			var my = d3.mouse(svg[0][0])[1];
-			console.log(my);
-		});
-	*/
-	
-	// initialize the force layout
-	// treat the center node specially
-	node = node.data([nodes[0]], function(d) { return d.id; });
-	append_node_to(node.enter()).attr('id', 'node-0');
+  /*
+  var linked_drag = d3.behavior.drag().origin(Object)
+    .on('dragend.mod', function(d) {
+      var my = d3.mouse(svg[0][0])[1];
+      console.log(my);
+    });
+  */
+  
+  // initialize the force layout
+  // treat the center node specially
+  node = node.data([nodes[0]], function(d) { return d.id; });
+  append_node_to(node.enter()).attr('id', 'node-0');
 
-	// put up the links
-	for (var i in graph) {
-		var l = graph[i], n = null, new_link = {source: null, target: null};
-		if (l.source.$oid == center_node_id) {
-			n = nodes_dict[l.target.$oid];
-			n.type = 'c';
-			new_link.source = nodes[0];
-			new_link.target = n;
-		} else if (l.target.$oid == center_node_id) {
-			n = nodes_dict[l.source.$oid];
-			n.type = 'p';
-			new_link.source = n;
-			new_link.target = nodes[0];
-		}
-		if (n != null && nodes.indexOf(n) < 0) {
-			n.type += l.attr.strength;
-			n.x = 0.;
-			n.y = 0.;
-			nodes.push(n);
-			links.push(new_link);
-		}
-	}
+  // put up the links
+  for (var i in graph) {
+    var l = graph[i], n = null, new_link = {source: null, target: null, type: l.attr.strength};
+    if (l.source.$oid == center_node_id) {
+      n = nodes_dict[l.target.$oid];
+      n.type = 'c';
+      new_link.source = nodes[0];
+      new_link.target = n;
+    } else if (l.target.$oid == center_node_id) {
+      n = nodes_dict[l.source.$oid];
+      n.type = 'p';
+      new_link.source = n;
+      new_link.target = nodes[0];
+    }
+    if (n != null && nodes.indexOf(n) < 0) {
+      n.type += l.attr.strength;
+      n.x = 0.;
+      n.y = 0.;
+      nodes.push(n);
+      links.push(new_link);
+    }
+  }
 
-	start();
+  start();
 
-	// put unlinked nodes into the tray
-	update_tray();
-	
-	// disables scrolling on iOS
-	document.body.addEventListener('touchmove', function(e){ e.preventDefault(); });
-	document.body.addEventListener('touchstart', function(e){ e.preventDefault(); }); 
-	
-	function append_node_to(selector) {
-		return selector.append("text").attr("class", 'node linked')
-			.text(function(d) { return d.name; })
-			.attr('text-anchor', 'middle')
-			.attr("x", function(d) { return d.x; })
-			.attr("y", function(d) { return d.y; });
-	}
+  // put unlinked nodes into the tray
+  update_tray();
+  
+  // disables scrolling on iOS
+  document.body.addEventListener('touchmove', function(e){ e.preventDefault(); });
+  document.body.addEventListener('touchstart', function(e){ e.preventDefault(); }); 
+  
+  function append_node_to(selector) {
+    return selector.append("text").attr("class", 'node linked')
+      .text(function(d) { return d.name; })
+      .attr('text-anchor', 'middle')
+      .attr("x", function(d) { return d.x; })
+      .attr("y", function(d) { return d.y; });
+  }
 
-	function move_to_center(d) {
-		var k = d3.select(this);
-		//d3.select(this).classed('clicked', !k.classed('clicked'));
-		document.location.pathname = '/edit/' + graph_id + '/' + d._id.$oid;
-	}
-	
-	function start() {
-		link = link.data(force.links(), function(d) { return d.source.id + "-" + d.target.id; });
-		link.enter().insert("line", ".node").attr("class", "link").attr('marker-end', 'url(#arrow)');
-		link.exit().remove();
+  function move_to_center(d) {
+    var k = d3.select(this);
+    //d3.select(this).classed('clicked', !k.classed('clicked'));
+    document.location.pathname = '/edit/' + graph_id + '/' + d._id.$oid;
+  }
+  
+  function start() {
+    link = link.data(force.links(), function(d) { return d.source.id + "-" + d.target.id; });
+    link.enter().insert("line", ".node").attr("class", function(d) {
+      return ['link', d.type].join(' ');
+    }).attr('marker-end', 'url(#arrow)');
+    link.attr('class', function(d) {
+      return ['link', d.type].join(' ');
+    });
+    link.exit().remove();
 
-		node = node.data(force.nodes(), function(d) { return d.id; });
-		append_node_to(node.enter())
-			.on('dblclick', move_to_center)
-			.call(force.drag);
-		node.exit().remove();
+    node = node.data(force.nodes(), function(d) { return d.id; });
+    append_node_to(node.enter())
+      .on('dblclick', move_to_center)
+      .call(force.drag);
+    node.exit().remove();
 
-		force.start();
-	}
+    force.start();
+  }
 
-	function update_tray() {
-		free_node = free_node.data(all_nodes.filter(function(n, i, a) { return nodes.indexOf(n) < 0; }), function(d) { return d.id; });
-		// free_node.enter().append('circle').attr("class", 'node unlinked')
-		// 	.attr('cx', function(d) { if (d.x==null) d.x = random_range(0, width); return d.x; }).attr('cy', function(d) { if (d.y==null) d.y = random_range(height*layout[1], height*layout[2]); return d.y; }).attr("r", 12)
-		append_node_to(free_node.enter())
-			.attr('class', 'node unlinked')
-			.attr('x', function(d) { if (d.x==null) d.x = random_range(0, width); return d.x; }).attr('y', function(d) { if (d.y==null) d.y = random_range(height*layout[1], height*layout[2]); return d.y; })
-			.on('dblclick', move_to_center)
-			.call(free_drag);
-		free_node.exit().remove();
-	}
+  function update_tray() {
+    free_node = free_node.data(all_nodes.filter(function(n, i, a) { return nodes.indexOf(n) < 0; }), function(d) { return d.id; });
+    // free_node.enter().append('circle').attr("class", 'node unlinked')
+    //   .attr('cx', function(d) { if (d.x==null) d.x = random_range(0, width); return d.x; }).attr('cy', function(d) { if (d.y==null) d.y = random_range(height*layout[1], height*layout[2]); return d.y; }).attr("r", 12)
+    append_node_to(free_node.enter())
+      .attr('class', 'node unlinked')
+      .attr('x', function(d) { if (d.x==null) d.x = random_range(0, width); return d.x; }).attr('y', function(d) { if (d.y==null) d.y = random_range(height*layout[1], height*layout[2]); return d.y; })
+      .on('dblclick', move_to_center)
+      .call(free_drag);
+    free_node.exit().remove();
+  }
 
-	function tick(e) {
-		
-		var k = .5 * e.alpha;
-		nodes.forEach(function(o, i) {
-			if (!o.fixed) {
-				o.y += (loci[o.type].y*height - o.y) * k;
-				o.x += (loci[o.type].x*width - o.x) * k;
-		  }
-		});
-		
-		node.attr("x", function(d) { return d.x; })
-				.attr("y", function(d) { return d.y; })
+  function tick(e) {
+    
+    var k = .5 * e.alpha;
+    nodes.forEach(function(o, i) {
+      if (!o.fixed) {
+        o.y += (loci[o.type].y*height - o.y) * k;
+        o.x += (loci[o.type].x*width - o.x) * k;
+      }
+    });
+    
+    node.attr("x", function(d) { return d.x; })
+        .attr("y", function(d) { return d.y; })
 
-		link.attr("x1", function(d) { return d.source.x; })
-				.attr("y1", function(d) { return d.source.y; })
-				.attr("x2", function(d) { return d.target.x; })
-				.attr("y2", function(d) { return d.target.y; });
-	}
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+  }
 
-	function post_json(url, obj, callback) {
-		var xhr = new XMLHttpRequest();
-		xhr.onreadystatechange = callback || function() {
-			if (xhr.readyState == 4) {
-				console.log(xhr.status, xhr.response);
-			}
-		};
-		xhr.open('POST', url, true);
-		xhr.setRequestHeader('Content-Type', 'application/json');
-		xhr.send(JSON.stringify(obj));
-	}
+  function post_json(url, obj, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = callback || function() {
+      if (xhr.readyState == 4) {
+        console.log(xhr.status, xhr.response);
+      }
+    };
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(JSON.stringify(obj));
+  }
 
-	function add_node(nodes, links, n, type) {
-		if (nodes.indexOf(n) < 0) {
-			n.type = type;
-			nodes.push(n);
-			if (type[0] == 'c')
-				links.push({source: nodes[0], target: n});
-			else
-				links.push({source: n, target: nodes[0]});
-	
-			var new_link = {
-				graph_id: graph_id,
-				source_id: (type[0] == 'c' ? nodes[0].id : n.id),
-				target_id: (type[0] == 'c' ? n.id : nodes[0].id),
-				attr: {'strength': type[1]}
-			};
-			post_json('{{ url_for('add_edge') }}', new_link)
-			// log
-			if (type[0] == 'p') 
-				console.log('added', n.name+'->'+nodes[0].name, type);
-			else
-				console.log('added', nodes[0].name+'->'+n.name, type);
-		}
-	}
+  function add_node(nodes, links, n, type) {
+    if (nodes.indexOf(n) < 0) {
+      n.type = type;
+      nodes.push(n);
+      if (type[0] == 'c')
+        links.push({source: nodes[0], target: n, type: type[1]});
+      else
+        links.push({source: n, target: nodes[0], type: type[1]});
+  
+      var new_link = {
+        graph_id: graph_id,
+        source_id: (type[0] == 'c' ? nodes[0].id : n.id),
+        target_id: (type[0] == 'c' ? n.id : nodes[0].id),
+        attr: {'strength': type[1]}
+      };
+      post_json('{{ url_for('add_edge') }}', new_link)
+      // log
+      if (type[0] == 'p') 
+        console.log('added', n.name+'->'+nodes[0].name, type);
+      else
+        console.log('added', nodes[0].name+'->'+n.name, type);
+    }
+  }
 
-	function update_edge(nodes, links, n, type) {
-		if (nodes.indexOf(n) < 0) {
-			n.type = type;
-			var new_link = {
-				graph_id: graph_id,
-				source_id: (type[0] == 'c' ? nodes[0].id : n.id),
-				target_id: (type[0] == 'c' ? n.id : nodes[0].id),
-				attr: {'strength': type[1]}
-			};
-			post_json('{{ url_for('update_edge') }}', new_link)
-			// log
-			if (type[0] == 'p') 
-				console.log('updated', n.name+'->'+nodes[0].name, type);
-			else
-				console.log('updated', nodes[0].name+'->'+n.name, type);
-		}
-	}
+  function update_edge(nodes, links, n, type) {
+    if (nodes.indexOf(n) > -1) {
+      n.type = type;
+      var new_link = {
+        graph_id: graph_id,
+        source_id: (type[0] == 'c' ? nodes[0].id : n.id),
+        target_id: (type[0] == 'c' ? n.id : nodes[0].id),
+        attr: {'strength': type[1]}
+      };
+      post_json('{{ url_for('update_edge') }}', new_link)
 
-	function remove_node(nodes, links, n) {
-		var i = nodes.indexOf(n), type = n.type;
-		n.type = null;
-		if (i > -1) {
-			nodes.splice(i, 1);
-			
-			// remove the link to the node n
-			for (var j in links) {
-				var l = links[j];
-				if (l.target == n || l.source == n) {
-					var popped_link = links.splice(j, 1)[0];
-					var old_link = {
-						graph_id: graph_id,
-						source_id: (type[0] == 'c' ? nodes[0].id : n.id),
-						target_id: (type[0] == 'c' ? n.id : nodes[0].id),
-					};
-					post_json('{{ url_for('remove_edge') }}', old_link);
+      // remove the link to the node n
+      for (var j in links) {
+        var l = links[j];
+        if (l.target == n || l.source == n) {
+          l.source = type[0] == 'c' ? nodes[0] : n;
+          l.target = type[0] == 'c' ? n : nodes[0];
+	  l.type = type[1];
+          break;
+        }
+      }
+      // log
+      if (type[0] == 'p') 
+        console.log('updated', n.name+'->'+nodes[0].name, type);
+      else
+        console.log('updated', nodes[0].name+'->'+n.name, type);
+    }
+  }
 
-					break;
-				}
-			}
-		}
-		// log
-		if (type[0] == 'p') 
-			console.log('removed', n.name+'->'+nodes[0].name, type);
-		else
-			console.log('removed', nodes[0].name+'->'+n.name, type);		
-	}
+  function remove_node(nodes, links, n) {
+    var i = nodes.indexOf(n), type = n.type;
+    n.type = null;
+    if (i > -1) {
+      nodes.splice(i, 1);
+      
+      // remove the link to the node n
+      for (var j in links) {
+        var l = links[j];
+        if (l.target == n || l.source == n) {
+          var popped_link = links.splice(j, 1)[0];
+          var old_link = {
+            graph_id: graph_id,
+            source_id: (type[0] == 'c' ? nodes[0].id : n.id),
+            target_id: (type[0] == 'c' ? n.id : nodes[0].id),
+          };
+          post_json('{{ url_for('remove_edge') }}', old_link);
 
-	function random_range(start, end) {
-		return Math.random() * (end - start) + start;
-	}
-	
-	function nearest_locus(x, y) {
-		var nearest_d = width*width+height*height, nearest_t = null;
-		for (var t in loci) {
-			var dis = (x-loci[t].x*width)*(x-loci[t].x*width)+(y-loci[t].y*height)*(y-loci[t].y*height);
-			if (dis < nearest_d) {
-				nearest_d = dis;
-				nearest_t = t;
-			}
-		}
-		return nearest_t;
-	}
-	
-	function update_bins(mx, my) {
-		if (my < height*layout[1]) {
-			var pbin = svg.select('#lbin-p'), cbin = svg.select('#lbin-c');
-			if (my < height*layout[0]) {
-				svg.selectAll('.pbin').attr('opacity', 0.5);
-				svg.selectAll('.cbin').attr('opacity', 0);
-				pbin.attr('opacity', 0.4);
-				cbin.attr('opacity', 0.1);
-			} else {
-				svg.selectAll('.cbin').attr('opacity', 0.5);
-				svg.selectAll('.pbin').attr('opacity', 0);
-				pbin.attr('opacity', 0.1);
-				cbin.attr('opacity', 0.4);
-			}
-			var bin = svg.select('#bin-'+nearest_locus(mx, my))
-			bin.attr('opacity', 0.8);
-		} else {
-			// show lbins
-			svg.selectAll('.lbin').attr('opacity', 0.3);
-			// hide bins
-			svg.selectAll('.bin').attr('opacity', 0);
-		}
-	}
+          break;
+        }
+      }
+    }
+    // log
+    if (type[0] == 'p') 
+      console.log('removed', n.name+'->'+nodes[0].name, type);
+    else
+      console.log('removed', nodes[0].name+'->'+n.name, type);    
+  }
+
+  function random_range(start, end) {
+    return Math.random() * (end - start) + start;
+  }
+  
+  function nearest_locus(x, y) {
+    var nearest_d = width*width+height*height, nearest_t = null;
+    for (var t in loci) {
+      var dis = (x-loci[t].x*width)*(x-loci[t].x*width)+(y-loci[t].y*height)*(y-loci[t].y*height);
+      if (dis < nearest_d) {
+        nearest_d = dis;
+        nearest_t = t;
+      }
+    }
+    return nearest_t;
+  }
+  
+  function update_bins(mx, my) {
+    if (my < height*layout[1]) {
+      var pbin = svg.select('#lbin-p'), cbin = svg.select('#lbin-c');
+      if (my < height*layout[0]) {
+        svg.selectAll('.pbin').attr('opacity', 0.5);
+        svg.selectAll('.cbin').attr('opacity', 0);
+        pbin.attr('opacity', 0.4);
+        cbin.attr('opacity', 0.1);
+      } else {
+        svg.selectAll('.cbin').attr('opacity', 0.5);
+        svg.selectAll('.pbin').attr('opacity', 0);
+        pbin.attr('opacity', 0.1);
+        cbin.attr('opacity', 0.4);
+      }
+      var bin = svg.select('#bin-'+nearest_locus(mx, my))
+      bin.attr('opacity', 0.8);
+    } else {
+      // show lbins
+      svg.selectAll('.lbin').attr('opacity', 0.3);
+      // hide bins
+      svg.selectAll('.bin').attr('opacity', 0);
+    }
+  }
 </script>
 </body>

@@ -5253,38 +5253,43 @@
     };
     force.drag = function() {
       if (!drag) drag = d3.behavior.drag().origin(d3_identity)
-      	.on("dragstart.force", function(d) {
-		      d3_layout_forceDragstart(d);
-		      
-		      var m = d3.mouse(svg.node());
-					update_bins(m[0], m[1]);
-		    })
-		    .on("drag.force", function(d) {
-		    	dragmove(d);
-		    	
-		    	// update bins
-		    	update_bins(d3.event.x, d3.event.y);
-		    })
-		    .on("dragend.force", function(d) {
-					d3_layout_forceDragend(d);
+        .on("dragstart.force", function(d) {
+          d3_layout_forceDragstart(d);
+          
+          var m = d3.mouse(svg.node());
+          update_bins(m[0], m[1]);
+        })
+        .on("drag.force", function(d) {
+          dragmove(d);
+          
+          // update bins
+          update_bins(d3.event.x, d3.event.y);
+        })
+        .on("dragend.force", function(d) {
+          d3_layout_forceDragend(d);
 
-					// graph modification
-					var my = d3.mouse(svg.node())[1];
-					if (my > height * layout[1]) {
-						// unlink a linked node
-						remove_node(nodes, links, d);
-						update_tray();
-						start();
-					} else {
-						var mx = d3.mouse(svg.node())[0];
-						d.type = nearest_locus(mx, my);
-					}
+          // graph modification
+          var my = d3.mouse(svg.node())[1];
+          if (my > height * layout[1]) {
+            // unlink a linked node
+            remove_node(nodes, links, d);
+            update_tray();
+            start();
+          } else {
+            var mx = d3.mouse(svg.node())[0];
+	    previous_type = d.type;
+            d.type = nearest_locus(mx, my);
+	    if (previous_type != d.type) {
+	      update_edge(nodes, links, d, d.type);
+	      start();
+	    }
+          }
 
-					// hide lbins
-					svg.selectAll('.lbin').attr('opacity', 0);
-					// hide bins
-					svg.selectAll('.bin').attr('opacity', 0);
-			});
+          // hide lbins
+          svg.selectAll('.lbin').attr('opacity', 0);
+          // hide bins
+          svg.selectAll('.bin').attr('opacity', 0);
+      });
       this.on("mouseover.force", d3_layout_forceMouseover).on("mouseout.force", d3_layout_forceMouseout).call(drag);
     };
     return d3.rebind(force, event, "on");
@@ -5916,7 +5921,7 @@
     return d3_layout_hierarchyRebind(treemap, hierarchy);
   };
   d3.csv = d3_dsv(",", "text/csv");
-  d3.tsv = d3_dsv("	", "text/tab-separated-values");
+  d3.tsv = d3_dsv("  ", "text/tab-separated-values");
   d3.geo = {};
   var d3_geo_radians = Math.PI / 180;
   d3.geo.azimuthal = function() {
