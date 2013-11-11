@@ -1,5 +1,5 @@
-from flask import Response, request
-from flask.ext.login import login_required
+from flask import Response, request, make_response
+from flask.ext.login import login_required, current_user
 from bson.objectid import ObjectId
 import json
 from bson.json_util import dumps
@@ -25,9 +25,6 @@ def _remove_edge(graph_id, source_id, target_id):
         }, j=True)
 
 def _update_edge(graph_id, source_id, target_id, attr):
-    # TODO error handling
-    #_remove_edge(graph_id, source_id, target_id)
-    #_add_edge(graph_id, source_id, target_id, attr)
     return mongo.db.edges.update({
             'graph_id': ObjectId(graph_id),
             '$or': [{
@@ -52,25 +49,27 @@ def normalize_json(requst):
         request.mimetype = 'application/json'
 
 # api endpoints
-# FIXME lack owner authentication 
 @app.route('/api/edge/add.json', methods=['POST'])
-@login_required
 def add_edge():
     normalize_json(request)
-    return Response(dumps(_add_edge(request.json['graph_id'], request.json['source_id'], request.json['target_id'], request.json['attr'])), mimetype='application/json')
+    if not current_user.is_anonymous() and current_user.graph_id == request.json['graph_id']:
+        return Response(dumps(_add_edge(request.json['graph_id'], request.json['source_id'], request.json['target_id'], request.json['attr'])), mimetype='application/json')
+    return make_response(json.dumps({'error': 'you do not the permission to edit this graph'}), 400)
      
 @app.route('/api/edge/remove.json', methods=['POST'])
-@login_required
 def remove_edge():
     normalize_json(request)
-    return Response(dumps(_remove_edge(request.json['graph_id'], request.json['source_id'], request.json['target_id'])), mimetype='application/json')
+    if not current_user.is_anonymous() and current_user.graph_id == request.json['graph_id']:
+        return Response(dumps(_remove_edge(request.json['graph_id'], request.json['source_id'], request.json['target_id'])), mimetype='application/json')
+    return make_response(json.dumps({'error': 'you do not the permission to edit this graph'}), 400)
 
 @app.route('/api/edge/update.json', methods=['POST'])    
-@login_required
 def update_edge():
     normalize_json(request)
-    r = _update_edge(request.json['graph_id'], request.json['source_id'], request.json['target_id'], request.json['attr'])
-    if r['updatedExisting']:
-        return Response(dumps(r), mimetype='application/json')
-    else:
-        return Response(dumps(r), status=400, mimetype='application/json')
+    if not current_user.is_anonymous() and current_user.graph_id == request.json['graph_id']:
+        r = _update_edge(request.json['graph_id'], request.json['source_id'], request.json['target_id'], request.json['attr'])
+        if r['updatedExisting']:
+            return Response(dumps(r), mimetype='application/json')
+        else:
+            return Response(dumps(r), status=400, mimetype='application/json')
+    return make_response(json.dumps({'error': 'you do not the permission to edit this graph'}), 400)
