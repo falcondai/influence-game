@@ -61,16 +61,13 @@ def logout():
     return handle_redirect(url_for('index'))
 
 # graph views
-@app.route('/view/<graph_id>/<center_node_id>')
-@app.route('/view/<graph_id>/')
-def view(graph_id, center_node_id=''):
+@app.route('/view/<graph_id>')
+def view(graph_id):
     graph = dumps(_get_graph(graph_id))
     if not graph:
         abort(404)
-    if center_node_id == '':
-        center_node_id = _get_center_node(graph_id)
-    # FIXME use a view-only page
-    return render_template('view.html', graph_id=graph_id, center_node_id=center_node_id, graph=graph, all_nodes=dumps([n for n in mongo.db.nodes.find()]))
+    # TODO return only nodes appearing in graph
+    return render_template('view.html', graph_id=graph_id, graph=graph, all_nodes=dumps([n for n in mongo.db.nodes.find()]))
     
 @app.route('/edit/<graph_id>/<center_node_id>')
 @app.route('/edit/<graph_id>/')
@@ -85,6 +82,7 @@ def edit(graph_id, center_node_id=None):
     if current_user.graph_id != graph_id:
         flash('You are not the owner of graph %s.' % graph_id)
         return redirect(url_for('view', graph_id=graph_id, center_node_id=center_node_id))
+    # TODO return less nodes
     return render_template('modify.html', graph_id=graph_id, center_node_id=center_node_id, graph=graph, all_nodes=dumps([n for n in mongo.db.nodes.find()]))
 
 # helper functions

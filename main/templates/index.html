@@ -1,24 +1,29 @@
 {% extends "base.html" %}
 {% block body %}
-	<div>
-	{% if current_user.is_authenticated() %}
-		Hi, {{ current_user.name }}! <a href="{{ url_for('logout') }}">logout</a>
-		<div>
-			Edit your graph: <a href="{{ url_for('edit', graph_id=current_user.graph_id) }}">{{ url_for('edit', graph_id=current_user.graph_id) }}</a>
-		</div>
-	{% else %}
-		Hi there, visitor! <a href="{{ url_for('login') }}">login</a> or <a href="{{ url_for('signup') }}">signup</a>
-	{% endif %}
-	</div>
+  <div>
+  {% if current_user.is_authenticated() %}
+    Hi, {{ current_user.name }}! <a href="{{ url_for('logout') }}">logout</a>
+    <div>
+      View your graph: <a href="{{ url_for('view', graph_id=current_user.graph_id) }}">{{ url_for('view', graph_id=current_user.graph_id) }}</a>
+    </div>
+    <div>
+      Edit your graph: <a href="{{ url_for('edit', graph_id=current_user.graph_id) }}">{{ url_for('edit', graph_id=current_user.graph_id) }}</a>
+    </div>
+  {% else %}
+    Hi there, visitor! <a href="{{ url_for('login') }}">login</a> or <a href="{{ url_for('signup') }}">signup</a>
+  {% endif %}
+  </div>
 
-	<div>
-		View others' graphs:
-		<ul>
-		{% for id in graph_ids %}
-			<li>
-				<a href="{{ url_for('view', graph_id=id) }}">{{ url_for('view', graph_id=id) }}</a>
-			</li>
-		{% endfor %}
-		</ul>
-	</div>
+  <div>
+    View others' graphs:
+    <ul>
+    {% for id in graph_ids %}
+      {% if id != current_user.graph_id %}
+        <li>
+          <a href="{{ url_for('view', graph_id=id) }}">{{ url_for('view', graph_id=id) }}</a>
+        </li>
+      {% endif %}
+    {% endfor %}
+    </ul>
+  </div>
 {% endblock %}
