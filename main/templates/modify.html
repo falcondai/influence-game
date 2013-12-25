@@ -486,36 +486,38 @@
   // search
   // ------
 
-  $('#search-box').bind('keyup', function(e) {
-    if (e.which == 13 && this.value != '') {// ENTER is pressed
-      $.getJSON(
-	'/api/search.json',
-	{
-	  'q': this.value
-	},
-	function(data) {
-	  var s = d3.select('#search-result').selectAll('li')
-	    .data(data, function(d) { return d._id.$oid; });
-	  s.enter()
-	    .append('li').text(function(d) { return d.name; })
-	    .on('click', function(d) { 
-	      console.log(d); 
-	      d.id = d._id.$oid;
-	      for (var i in all_nodes) {
-		if (d.id == all_nodes[i].id) {
-		  console.log('node exists');
-		  return;
-		}
-	      }
-	      all_nodes.push(d);
-	      update_tray();
-	    })
-	    .on('dblclick', move_to_center);
-	  s.exit().remove();
-	}
-      );
-    }
-  }).on('input', function(e) {
+  $('#search-box')
+  // .bind('keyup', function(e) {
+  //   if (e.which == 13 && this.value != '') {// ENTER is pressed
+  //     $.getJSON(
+  // 	'/api/search.json',
+  // 	{
+  // 	  'q': this.value
+  // 	},
+  // 	function(data) {
+  // 	  var s = d3.select('#search-result').selectAll('li')
+  // 	    .data(data, function(d) { return d._id.$oid; });
+  // 	  s.enter()
+  // 	    .append('li').text(function(d) { return d.name; })
+  // 	    .on('click', function(d) { 
+  // 	      console.log(d); 
+  // 	      d.id = d._id.$oid;
+  // 	      for (var i in all_nodes) {
+  // 		if (d.id == all_nodes[i].id) {
+  // 		  console.log('node exists');
+  // 		  return;
+  // 		}
+  // 	      }
+  // 	      all_nodes.push(d);
+  // 	      update_tray();
+  // 	    })
+  // 	    .on('dblclick', move_to_center);
+  // 	  s.exit().remove();
+  // 	}
+  //     );
+  //   }
+  // })
+  .on('input', function(e) {
     if (this.value != '') {
       $.getJSON(
 	'/api/search.json',

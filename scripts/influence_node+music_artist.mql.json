@@ -1,0 +1,30 @@
+[{
+  "mid": null,
+  "id": null,
+  "name": null,
+  "type": "/music/artist",
+  "ns0:type": "/influence/influence_node",
+  "/influence/influence_node/influenced": [{
+    "type": "/music/artist",
+    "mid": null,
+    "id": null,
+    "optional": true
+  }],
+  "/influence/influence_node/influenced_by": [{
+    "type": "/music/artist",
+    "mid": null,
+    "id": null,
+    "optional": true
+  }],
+  "genre": [],
+  "active_start": null,
+  "active_end": null,
+  "origin": [{
+    "mid": null,
+    "name": null,
+    "optional": true
+  }],
+  "supporting_artists": [],
+  "/common/topic/official_website": [],
+  "/common/topic/social_media_presence": []
+}]
