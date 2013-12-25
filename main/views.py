@@ -63,35 +63,81 @@ def logout():
 # graph views
 @app.route('/view/<graph_id>')
 def view(graph_id):
-    graph = dumps(_get_graph(graph_id))
+    g = _get_graph(graph_id)
+    ns = list(mongo.db.nodes.find({
+        '_id': {
+            '$in': _get_node_id_from_edges(g)
+        }
+    }, {'name': 1}))
+    graph = dumps(g)
     if not graph:
         abort(404)
-    # TODO return only nodes appearing in graph
-    return render_template('view.html', graph_id=graph_id, graph=graph, all_nodes=dumps([n for n in mongo.db.nodes.find()]))
-    
+    return render_template('view.html', graph_id=graph_id, graph=graph, all_nodes=dumps(ns))
+
+
 @app.route('/edit/<graph_id>/<center_node_id>')
 @app.route('/edit/<graph_id>/')
 @login_required
 def edit(graph_id, center_node_id=None):
-    graph = dumps(_get_graph(graph_id))
-    if not graph:
-        abort(404)
-    if not center_node_id:
-        center_node_id = _get_center_node(graph_id)
-
     if current_user.graph_id != graph_id:
         flash('You are not the owner of graph %s.' % graph_id)
         return redirect(url_for('view', graph_id=graph_id, center_node_id=center_node_id))
-    # TODO return less nodes
-    return render_template('modify.html', graph_id=graph_id, center_node_id=center_node_id, graph=graph, all_nodes=dumps([n for n in mongo.db.nodes.find()]))
+
+    g = _get_graph(graph_id)
+    graph = dumps(g)
+    if not graph:
+        abort(404)
+    
+    if not center_node_id:
+        center_node_id = _get_center_node(graph_id)
+
+    center_node = _get_node(center_node_id)
+    # use Freebase's influence nodes as prior
+    # TODO turn this into a collection, easy to switch different priors
+    ids = []
+    for n in center_node['/influence/influence_node/influenced_by'] + center_node['/influence/influence_node/influenced']:
+        ids.append(n['id'])
+
+    _ids = []
+    for e in g:
+        if e['source'] == ObjectId(center_node_id):
+            _ids.append(e['target'])
+            print e
+        elif e['target'] == ObjectId(center_node_id):
+            _ids.append(e['source'])
+            print e
+
+    nodes = list(mongo.db.nodes.find({
+        '$or': [
+            {
+                'id': {
+                    '$in': ids
+                }
+            }, {
+                '_id': {
+                    '$in': _ids + [center_node['_id']]
+                }
+            }
+        ]
+    }, {'name': 1}))
+
+    return render_template('modify.html', graph_id=graph_id, center_node_id=center_node_id, graph=graph, all_nodes=dumps(nodes))
 
 # helper functions
 def _get_graph(graph_id):
-    es = mongo.db.edges.find({'graph_id': ObjectId(graph_id)})
-    return [e for e in es]
+    return list(mongo.db.edges.find({'graph_id': ObjectId(graph_id)}, {'source': 1, 'target': 1, 'attr': 1}))
+
 
 def _get_node(node_id):
     return mongo.db.nodes.find_one({'_id': ObjectId(node_id)})
+
+    
+def _get_node_id_from_edges(edges):
+    nids = []
+    for e in edges:
+        nids.append(e['source'])
+        nids.append(e['target'])
+    return nids
     
 # TODO not very useful
 # def _inflate_graph(graph):
@@ -104,12 +150,22 @@ def _get_node(node_id):
 def _get_center_node(graph_id):
     g = _get_graph(graph_id)
     if len(g) > 0:
-        oid = g[0]['source']
+        oid = g[-1]['source']
         return unicode(oid)
     return unicode(mongo.db.nodes.find_one()['_id'])
 
 # AJAX calls
 # TODO add status message and wrapper to payload
+
+@app.route('/api/search.json')
+def search_json():
+    if len(request.args['q']) > 0:
+        print request.args['q']
+        return Response(dumps(list(mongo.db.nodes.find({
+            'name': {'$regex': request.args['q'], '$options': 'i'}
+        }, {'name': 1}).sort('name'))))
+    # TODO response wrapper and more informative error report
+    abort(400)
 
 @app.route('/api/graph/<graph_id>.json')
 def get_graph_json(graph_id):
@@ -122,5 +178,5 @@ def get_node_json(node_id):
     
 @app.route('/api/all_nodes.json')
 def get_all_nodes_json():
-    return Response(dumps([n for n in mongo.db.nodes.find()]), mimetype='application/json')
+    return Response(dumps(list(mongo.db.nodes.find({}, {'name': 1}))), mimetype='application/json')
 

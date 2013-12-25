@@ -6,6 +6,20 @@
     body {
       margin: 0;
     }
+
+    .column {
+	display: inline-block;
+	float: left;
+    }
+
+    #search-result {
+	height: 800px;
+	overflow-y: auto;
+    }
+
+    #search-result li {
+	cursor: pointer;
+    }
     
     .link {
       stroke: #aaa;
@@ -29,14 +43,13 @@
     }
 
     .node {
-      stroke: green;
+      stroke: none;
       stroke-width: 1px;
       cursor: pointer;
     }
     
     #node-0 {
-      fill: #f44;
-      stroke: #800;
+      fill: black;
       font-size: 1.1em;
     }
 
@@ -46,11 +59,11 @@
     }
 
     .node.linked {
-      fill: #000;
+      fill: blue;
     }
 
     .node.unlinked {
-      fill: #555;
+      fill: green;
     }
   
     .node.clicked {
@@ -83,6 +96,16 @@
 
 <div>back to <a href="{{ url_for('index') }}">home</a></div>
 <div>view the entire <a href="{{ url_for('view', graph_id=graph_id)}}">graph</a></div>
+
+<div id="container">
+  <div class="column" id="svg-wrapper">
+  </div>
+  <div class="column" id="search-wrapper">
+    <input type="text" id="search-box" placeholder="artist name">
+    <ul id="search-result">
+    </ul>
+  </div>
+</div>
 <script>
   var graph_id = '{{ graph_id }}', 
     center_node_id = '{{ center_node_id }}', 
@@ -127,6 +150,12 @@
   var nodes = [all_nodes[0]],
       links = [];
 
+  var svg = d3.select("#svg-wrapper").append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+  //width = svg.node().clientWidth;
+
   var force = d3.layout.force()
       .nodes(nodes)
       .links(links)
@@ -134,10 +163,6 @@
       .linkStrength(0)
       .size([width, height*layout[1]])
       .on("tick", tick);
-
-  var svg = d3.select("body").append("svg")
-      .attr("width", width)
-      .attr("height", height);
 
   svg.append('rect').attr('class', 'tray').attr('width', width).attr('height', height*(layout[2]-layout[1])).attr('y', height*layout[1]);
   
@@ -269,6 +294,7 @@
   document.body.addEventListener('touchmove', function(e){ e.preventDefault(); });
   document.body.addEventListener('touchstart', function(e){ e.preventDefault(); }); 
   
+  // FIXME use call
   function append_node_to(selector) {
     return selector.append("text").attr("class", 'node linked')
       .text(function(d) { return d.name; })
@@ -361,10 +387,7 @@
       };
       post_json('{{ url_for('add_edge') }}', new_link)
       // log
-      if (type[0] == 'p') 
-        console.log('added', n.name+'->'+nodes[0].name, type);
-      else
-        console.log('added', nodes[0].name+'->'+n.name, type);
+      console.log('added', type[0] == 'p' ? n.name+' -> '+nodes[0].name : nodes[0].name+' -> '+n.name, type);
     }
   }
 
@@ -390,10 +413,7 @@
         }
       }
       // log
-      if (type[0] == 'p') 
-        console.log('updated', n.name+'->'+nodes[0].name, type);
-      else
-        console.log('updated', nodes[0].name+'->'+n.name, type);
+      console.log('updated', type[0] == 'p' ? n.name+' -> '+nodes[0].name : nodes[0].name+' -> '+n.name, type);
     }
   }
 
@@ -419,11 +439,8 @@
         }
       }
     }
-    // log
-    if (type[0] == 'p') 
-      console.log('removed', n.name+'->'+nodes[0].name, type);
-    else
-      console.log('removed', nodes[0].name+'->'+n.name, type);    
+    // log 
+    console.log('removed', type[0] == 'p' ? n.name+' -> '+nodes[0].name : nodes[0].name+' -> '+n.name, type);
   }
 
   function random_range(start, end) {
@@ -465,5 +482,68 @@
       svg.selectAll('.bin').attr('opacity', 0);
     }
   }
+
+  // search
+  // ------
+
+  $('#search-box').bind('keyup', function(e) {
+    if (e.which == 13 && this.value != '') {// ENTER is pressed
+      $.getJSON(
+	'/api/search.json',
+	{
+	  'q': this.value
+	},
+	function(data) {
+	  var s = d3.select('#search-result').selectAll('li')
+	    .data(data, function(d) { return d._id.$oid; });
+	  s.enter()
+	    .append('li').text(function(d) { return d.name; })
+	    .on('click', function(d) { 
+	      console.log(d); 
+	      d.id = d._id.$oid;
+	      for (var i in all_nodes) {
+		if (d.id == all_nodes[i].id) {
+		  console.log('node exists');
+		  return;
+		}
+	      }
+	      all_nodes.push(d);
+	      update_tray();
+	    })
+	    .on('dblclick', move_to_center);
+	  s.exit().remove();
+	}
+      );
+    }
+  }).on('input', function(e) {
+    if (this.value != '') {
+      $.getJSON(
+	'/api/search.json',
+	{
+	  'q': this.value
+	},
+	function(data) {
+	  var s = d3.select('#search-result').selectAll('li')
+	    .data(data, function(d) { return d._id.$oid; });
+	  s.enter()
+	    .append('li').text(function(d) { return d.name; })
+	    .on('click', function(d) { 
+	      console.log(d); 
+	      d.id = d._id.$oid;
+	      for (var i in all_nodes) {
+		if (d.id == all_nodes[i].id) {
+		  console.log('node exists');
+		  return;
+		}
+	      }
+	      all_nodes.push(d);
+	      update_tray();
+	    })
+	    .on('dblclick', move_to_center);
+	  s.exit().remove();
+	}
+      );
+    }
+  });
 </script>
 </body>
