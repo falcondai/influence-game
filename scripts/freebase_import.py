@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import json, urllib, sys
 
 endpoint = 'https://www.googleapis.com/freebase/v1/mqlread'

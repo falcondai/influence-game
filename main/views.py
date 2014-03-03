@@ -2,6 +2,7 @@ from flask import render_template, redirect, session, url_for, request, flash, a
 from flask.ext.login import current_user, login_required, login_user, logout_user
 from bson.objectid import ObjectId
 import json
+from itertools import chain
 from bson.json_util import dumps
 
 from login import login_manager, User
@@ -20,10 +21,14 @@ def login_form_validate(form):
 def signup_form_validate(form):
     return form.get('username') and form.get('password')
 
-@app.route('/')
+@app.route('/dash')
 def index():
     graphs = mongo.db.graphs.find({}, {'_id': 1})
     return render_template('index.html', graph_ids=map(lambda x: str(x['_id']), graphs))
+
+@app.route('/')
+def home():
+    return render_template('home.html')
 
 # user login flow
 @app.route('/signup', methods=['GET', 'POST'])
@@ -77,12 +82,17 @@ def view(graph_id):
 
 @app.route('/edit/<graph_id>/<center_node_id>')
 @app.route('/edit/<graph_id>/')
+@app.route('/edit/')
 @login_required
-def edit(graph_id, center_node_id=None):
-    if current_user.graph_id != graph_id:
+def edit(graph_id=None, center_node_id=None):
+    if graph_id != None and current_user.graph_id != graph_id:
         flash('You are not the owner of graph %s.' % graph_id)
         return redirect(url_for('view', graph_id=graph_id, center_node_id=center_node_id))
 
+    if graph_id == None:
+        graph_id = current_user.graph_id
+
+    # TODO refactor to access only neighbors
     g = _get_graph(graph_id)
     graph = dumps(g)
     if not graph:
@@ -94,9 +104,9 @@ def edit(graph_id, center_node_id=None):
     center_node = _get_node(center_node_id)
     # use Freebase's influence nodes as prior
     # TODO turn this into a collection, easy to switch different priors
-    ids = []
-    for n in center_node['/influence/influence_node/influenced_by'] + center_node['/influence/influence_node/influenced']:
-        ids.append(n['id'])
+    mids = []
+    for n in chain(center_node['/influence/influence_node/influenced_by'], center_node['/influence/influence_node/influenced'], center_node['/influence/influence_node/peers']):
+        mids.append(n['mid'])
 
     _ids = []
     for e in g:
@@ -110,8 +120,8 @@ def edit(graph_id, center_node_id=None):
     nodes = list(mongo.db.nodes.find({
         '$or': [
             {
-                'id': {
-                    '$in': ids
+                'mid': {
+                    '$in': mids
                 }
             }, {
                 '_id': {
@@ -119,9 +129,14 @@ def edit(graph_id, center_node_id=None):
                 }
             }
         ]
-    }, {'name': 1}))
+    }, {
+        'name': 1,
+        '/common/topic/image': {
+            '$slice': 1
+        }
+    }))
 
-    return render_template('modify.html', graph_id=graph_id, center_node_id=center_node_id, graph=graph, all_nodes=dumps(nodes))
+    return render_template('edit.html', graph_id=graph_id, center_node_id=center_node_id, graph=graph, all_nodes=dumps(nodes))
 
 # helper functions
 def _get_graph(graph_id):
@@ -152,7 +167,8 @@ def _get_center_node(graph_id):
     if len(g) > 0:
         oid = g[-1]['source']
         return unicode(oid)
-    return unicode(mongo.db.nodes.find_one()['_id'])
+    # start with The Beatles as the center node
+    return unicode(mongo.db.nodes.find_one({'name': 'The Beatles'})['_id'])
 
 # AJAX calls
 # TODO add status message and wrapper to payload
@@ -163,7 +179,11 @@ def search_json():
         print request.args['q']
         return Response(dumps(list(mongo.db.nodes.find({
             'name': {'$regex': request.args['q'], '$options': 'i'}
-        }, {'name': 1}).sort('name'))))
+        }, {'name': 1, 
+            '/common/topic/image': {
+                '$slice': 1
+            }
+        }).sort('name'))))
     # TODO response wrapper and more informative error report
     abort(400)
 

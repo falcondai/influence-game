@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from pymongo import MongoClient
 import sys, json
 
@@ -7,6 +9,13 @@ db = client.main
 f = sys.stdin
 
 for l in f:
-    objs = eval(l)
-    print len(objs)
-    db.nodes.insert(objs)
+    objs = json.loads(l)
+    print 'upserting %d JSON objects by mid...' % len(objs)
+    for i, obj in enumerate(objs):
+        db.nodes.update(
+            {
+                'mid': obj['mid'],
+            },
+            obj,
+            True
+        )
