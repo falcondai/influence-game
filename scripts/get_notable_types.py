@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import requests, sys, json
+import requests, sys, json, time
 
 endpoint = 'https://www.googleapis.com/freebase/v1/topic%s?filter=/common/topic/notable_types'
 

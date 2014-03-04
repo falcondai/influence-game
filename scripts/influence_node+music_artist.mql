@@ -2,25 +2,7 @@
   "mid": null,
   "id": null,
   "name": null,
-  "/common/topic/alias": [],
   "type": "/music/artist",
-  "genre": [],
-  "active_start": null,
-  "active_end": null,
-  "origin": [{
-    "id": null,
-    "name": null,
-    "optional": true
-  }],
-  "album": [],
-  "track": [],
-  "supporting_artists": [],
-  "/common/topic/official_website": [],
-  "/common/topic/social_media_presence": [],
-  "/common/topic/image": [{
-    "mid": null,
-    "name": null
-  }],
 
   "a:type": "/influence/influence_node",
   "/influence/influence_node/influenced": [{

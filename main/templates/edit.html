@@ -366,7 +366,7 @@
     // TODO refactor this
     // FIXME layout change with added nodes
     an[0].forEach(function(o, i) {
-      var xy = tray_coord(width, height * (layout[2] - layout[1]), a, b, i);
+      var xy = tray_coord(width, height * (layout[2] - layout[1]) - 40, a, b, i);
       d3.select(o)
 	.attr('transform', function(d) {
 	  if (d.x == null) {
