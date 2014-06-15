@@ -2,6 +2,5 @@
 *.pyc
 venv/
 db/
-db
-scripts/*.json
+deploy/data/
 credentials/

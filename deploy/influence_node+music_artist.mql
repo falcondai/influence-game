@@ -1,0 +1,26 @@
+[{
+  "mid": null,
+  "id": null,
+  "name": null,
+  "type": "/music/artist",
+
+  "a:type": "/influence/influence_node",
+  "/influence/influence_node/influenced": [{
+    "type": "/music/artist",
+    "mid": null,
+    "id": null,
+    "optional": true
+  }],
+  "/influence/influence_node/peers": [{
+    "type": "/music/artist",
+    "mid": null,
+    "id": null,
+    "optional": true
+  }],
+  "/influence/influence_node/influenced_by": [{
+    "type": "/music/artist",
+    "mid": null,
+    "id": null,
+    "optional": true
+  }]
+}]
