@@ -3,4 +3,6 @@
 venv/
 db/
 deploy/data/
+deploy/log/
 credentials/
+deploy/nohup.out

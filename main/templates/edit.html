@@ -3,88 +3,73 @@
   <title>edit : influence game</title>
   <style>
     body {
-      margin: 0;
+      margin: 10px;
     }
-
     .column {
 	display: inline-block;
 	float: left;
     }
-
     #search-result {
 	height: 800px;
 	overflow-y: auto;
     }
-
     #search-result li {
 	cursor: pointer;
     }
-    
     .link {
       stroke: #aaa;
       stroke-width: 1.5px;
     }
-
     .link.w {
       stroke-width: 1.5px;
     }
-
     .link.m {
       stroke-width: 2px;
     }
-
     .link.s {
       stroke-width: 2.5px;
     }
-    
     #arrow {
         fill: #888;
     }
-
     .node {
       stroke: none;
       stroke-width: 1px;
       cursor: pointer;
       font-weight: bold;
     }
-    
     #node-0 {
       fill: black;
       font-size: 1.1em;
     }
-
     .tray {
       fill: #ccc;
       stroke: none;
     }
-
     .node.linked {
       fill: blue;
     }
-
     .node.unlinked {
       fill: red;
     }
-  
     .node.clicked {
       stroke: #57c;
       stroke-width: 3px;
     }
-    
     .bin {
       stroke: rgb(0, 175, 0);
       stroke-width: 5;
       stroke-dasharray: 30, 10;
       fill: none;
+      transition: all 0.2s ease;
     }
-    
     .lbin {
       stroke: rgb(0, 175, 0);
       stroke-width: 5;
       stroke-dasharray: 30, 10;
       fill: none;
+      transition: all 0.2s ease;
     }
-
     .locus {
       display: none;
     }
